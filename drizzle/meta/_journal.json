@@ -8,6 +8,13 @@
       "when": 1785746511957,
       "tag": "0000_left_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785747372143,
+      "tag": "0001_nervous_selene",
+      "breakpoints": true
     }
   ]
 }
