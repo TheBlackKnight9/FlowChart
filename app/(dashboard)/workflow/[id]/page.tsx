@@ -1,4 +1,4 @@
-// import { notFound } from "next/navigation"
+import { WorkflowShell } from "@/features/workflows/components/workflow-shell"
 
 export default async function Page({
   params,
@@ -7,7 +7,5 @@ export default async function Page({
 }) {
   const { id } = await params
 
-  // notFound();
-
-  return <div>{id}</div>
+  return <WorkflowShell workflowId={id} />
 }
