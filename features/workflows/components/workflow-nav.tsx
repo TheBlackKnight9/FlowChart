@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Plus, Workflow } from "lucide-react"
 import {
   SidebarGroup,
@@ -27,6 +29,10 @@ interface WorkflowNavProps {
 
 export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
   const { state } = useSidebar()
+  const pathname = usePathname()
+  const activeWorkflowId = pathname.startsWith("/workflow/")
+    ? pathname.split("/")[2]
+    : null
 
   function handleCreate() {
     const name = generateSlug()
@@ -53,8 +59,14 @@ export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
                 <SidebarMenu className="gap-y-0.5">
                   {workflows.map((workflow) => (
                     <SidebarMenuItem key={workflow.id}>
-                      <SidebarMenuButton className="truncate">
-                        <span className="truncate">{workflow.name}</span>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={workflow.id === activeWorkflowId}
+                        className="truncate"
+                      >
+                        <Link href={`/workflow/${workflow.id}`}>
+                          <span className="truncate">{workflow.name}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -77,8 +89,14 @@ export function WorkflowNav({ workflows, onCreateWorkflow }: WorkflowNavProps) {
         <SidebarMenu className="gap-y-0.5">
           {workflows.map((workflow) => (
             <SidebarMenuItem key={workflow.id}>
-              <SidebarMenuButton className="truncate">
-                <span className="truncate">{workflow.name}</span>
+              <SidebarMenuButton
+                asChild
+                isActive={workflow.id === activeWorkflowId}
+                className="truncate"
+              >
+                <Link href={`/workflow/${workflow.id}`}>
+                  <span className="truncate">{workflow.name}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

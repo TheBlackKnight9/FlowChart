@@ -32,7 +32,7 @@ export default function RootLayout({
         geist.variable
       )}
     >
-      <body>
+      <body suppressHydrationWarning>
         <ClerkProvider appearance={{ theme: shadcn }}>
           <ThemeProvider>
             <TooltipProvider>
