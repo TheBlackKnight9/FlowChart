@@ -1,28 +1,23 @@
 "use client"
 
-import { useCallback } from "react"
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  addEdge,
-  useNodesState,
-  useEdgesState,
   ConnectionLineType,
-  type OnConnect,
-  type Node,
   type Edge,
   type ColorMode,
-  NodeTypes,
 } from "@xyflow/react"
+import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
 import { useTheme } from "next-themes"
 
 import { StepNode } from "@/features/workflows/components/step-node"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 import "@xyflow/react/dist/style.css"
-
+import "@liveblocks/react-ui/styles.css"
+import "@liveblocks/react-flow/styles.css"
 
 const nodeTypes = {
   step: StepNode,
@@ -34,7 +29,8 @@ const initialNodes: StepNodeType[] = [
     type: "step",
     position: { x: 0, y: 0 },
     data: {
-      type: "start", kind: "trigger", title: "Start", values: {},},
+      type: "start", kind: "trigger", title: "Start", values: {},
+    },
   },
 ]
 
@@ -44,23 +40,28 @@ export function Canvas() {
   const { resolvedTheme } = useTheme()
   const colorMode: ColorMode = resolvedTheme === "dark" ? "dark" : "light"
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
-
-  const onConnect: OnConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges]
-  )
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onDelete,
+  } = useLiveblocksFlow({
+    nodes: { initial: initialNodes },
+    edges: { initial: initialEdges },
+  })
 
   return (
     <div className="size-full">
       <ReactFlow
         nodeTypes={nodeTypes}
-        nodes={nodes}
-        edges={edges}
+        nodes={nodes ?? undefined}
+        edges={edges ?? undefined}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onDelete={onDelete}
         colorMode={colorMode}
         fitView
         connectionLineType={ConnectionLineType.SmoothStep}
@@ -78,6 +79,7 @@ export function Canvas() {
         }
         maxZoom={1}
       >
+        <Cursors />
         <Background />
         <Controls />
         <MiniMap />
