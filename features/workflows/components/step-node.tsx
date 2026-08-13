@@ -18,7 +18,7 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "min-w-50 max-w-80 rounded-(--radius) border-2 border-border bg-card text-card-foreground",
+        "min-w-50 max-w-80 select-none rounded-(--radius) border-2 border-border bg-card text-card-foreground",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background"
       )}
     >
