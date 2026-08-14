@@ -1,45 +1,57 @@
 "use client"
 
+import { useSyncExternalStore } from "react"
+import { useTheme } from "next-themes"
 import {
-  ReactFlow,
-  Background,
   Controls,
-  MiniMap,
+  ReactFlow,
   ConnectionLineType,
-  type Edge,
   type ColorMode,
+  type Edge,
+  NodeTypes,
+  Panel,
 } from "@xyflow/react"
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
-import { useTheme } from "next-themes"
+import { AvatarStack } from "@liveblocks/react-ui";
 
 import { StepNode } from "@/features/workflows/components/step-node"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 import "@xyflow/react/dist/style.css"
-import "@liveblocks/react-ui/styles.css"
-import "@liveblocks/react-flow/styles.css"
+import "@liveblocks/react-ui/styles.css";
+import "@liveblocks/react-flow/styles.css";
 
-const nodeTypes = {
-  step: StepNode,
-}
+const nodeTypes: NodeTypes = { step: StepNode }
 
 const initialNodes: StepNodeType[] = [
   {
     id: "start",
     type: "step",
     position: { x: 0, y: 0 },
-    data: {
-      type: "start", kind: "trigger", title: "Start", values: {},
-    },
+    data: { type: "start", kind: "trigger", title: "Start", values: {} },
   },
 ]
 
 const initialEdges: Edge[] = []
 
+const emptySubscribe = () => () => { }
+
+// False during server render and hydration, true after mount. Keeps the
+// server and initial client render identical to avoid a hydration mismatch.
+function useMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  )
+}
+
 export function Canvas() {
   const { resolvedTheme } = useTheme()
-  const colorMode: ColorMode = resolvedTheme === "dark" ? "dark" : "light"
-
+  const mounted = useMounted()
+  const colorMode: ColorMode = mounted
+    ? (resolvedTheme as ColorMode) ?? "light"
+    : "light"
   const {
     nodes,
     edges,
@@ -48,6 +60,7 @@ export function Canvas() {
     onConnect,
     onDelete,
   } = useLiveblocksFlow({
+    suspense: true,
     nodes: { initial: initialNodes },
     edges: { initial: initialEdges },
   })
@@ -56,8 +69,8 @@ export function Canvas() {
     <div className="size-full">
       <ReactFlow
         nodeTypes={nodeTypes}
-        nodes={nodes ?? undefined}
-        edges={edges ?? undefined}
+        nodes={nodes}
+        edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -65,10 +78,10 @@ export function Canvas() {
         colorMode={colorMode}
         fitView
         connectionLineType={ConnectionLineType.SmoothStep}
-        connectionLineStyle={{stroke: "var(--border)"}}
+        connectionLineStyle={{ stroke: "var(--border)" }}
         defaultEdgeOptions={{
           type: "smoothstep",
-          style: { stroke: "var(--border)"},
+          style: { stroke: "var(--border)" },
         }}
         style={
           {
@@ -79,10 +92,11 @@ export function Canvas() {
         }
         maxZoom={1}
       >
-        <Cursors />
-        <Background />
         <Controls />
-        <MiniMap />
+        <Cursors />
+        <Panel position="top-right">
+          <AvatarStack />
+        </Panel>
       </ReactFlow>
     </div>
   )
