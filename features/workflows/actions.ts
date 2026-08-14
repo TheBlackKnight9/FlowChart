@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth as triggerAuth, tasks } from "@trigger.dev/sdk";
 import type { helloWorldTask } from "@/trigger/example";
-import { createWorkflow } from "@/features/workflows/data";
+import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
 
 export async function createWorkflowAction(name: string) {
   const { orgId } = await clerkAuth();
@@ -18,6 +18,19 @@ export async function createWorkflowAction(name: string) {
 
   revalidatePath("/", "layout");
   redirect(`/workflow/${workflow.id}`);
+}
+
+export async function deleteWorkflowAction(id: string) {
+  const { orgId } = await clerkAuth();
+
+  if (!orgId) {
+    throw new Error("No active organization. Please select an organization.");
+  }
+
+  await deleteWorkflow(orgId, id);
+
+  revalidatePath("/", "layout");
+  redirect("/");
 }
 
 export async function runWorkflowAction() {

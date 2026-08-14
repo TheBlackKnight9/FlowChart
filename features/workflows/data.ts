@@ -30,3 +30,13 @@ export async function createWorkflow(orgId: string, name: string): Promise<Workf
 
     return workflow;
 }
+
+export async function deleteWorkflow(orgId: string, id: string): Promise<Workflow | undefined> {
+    const [workflow] = await db
+        .delete(workflows)
+        .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+        .returning();
+
+    return workflow;
+}
+

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react"
 import { useTheme } from "next-themes"
 import {
+  Background,
   Controls,
   ReactFlow,
   ConnectionLineType,
@@ -92,6 +93,7 @@ export function Canvas() {
         }
         maxZoom={1}
       >
+        <Background />
         <Controls />
         <Cursors />
         <Panel position="top-right">

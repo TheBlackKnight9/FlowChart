@@ -3,11 +3,12 @@ import { Globe, MousePointerClick, type LucideIcon } from "lucide-react"
 
 export type StepNodeKind = "trigger" | "action"
 
-// One editable field on a node, rendered as an input in the inspector later.
 export type NodeField = {
   key: string
   label: string
   placeholder?: string
+  multiline?: boolean
+  required?: boolean
 }
 
 // A node type's manifest entry. Add a node by adding an entry to nodeRegistry.
