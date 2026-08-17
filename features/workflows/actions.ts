@@ -3,10 +3,12 @@
 import { auth as clerkAuth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { auth as triggerAuth, tasks } from "@trigger.dev/sdk";
+import { auth as triggerAuth, tasks, runs } from "@trigger.dev/sdk";
 import type { helloWorldTask } from "@/trigger/example";
-import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
+import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/workflows/data";
 import { liveblocks } from "@/lib/liveblocks";
+
+import { WorkflowGraph } from "@/lib/db/schema";
 
 export async function createWorkflowAction(name: string) {
   const { orgId } = await clerkAuth();
@@ -40,12 +42,19 @@ export async function deleteWorkflowAction(id: string) {
   redirect("/");
 }
 
-export async function runWorkflowAction() {
+export async function runWorkflowAction({
+  id,
+  graph,
+}: {
+  id: string
+  graph: WorkflowGraph
+}) {
   const { orgId } = await clerkAuth();
 
   if (!orgId) {
     throw new Error("No active organization. Please select an organization.");
   }
+  await saveWorkflowGraph({ orgId, id, graph})
 
   const handle = await tasks.trigger<typeof helloWorldTask>("hello-world", {
     message: "Workflow run initiated from right-sidebar",
@@ -63,4 +72,12 @@ export async function runWorkflowAction() {
     runId: handle.id,
     publicAccessToken,
   };
+}
+
+export async function cancelWorkflowRunAction(runId: string) {
+  const { orgId } = await clerkAuth();
+  if (!orgId) {
+    throw new Error("No active organization. Please select an organization.");
+  }
+  await runs.cancel(runId);
 }
