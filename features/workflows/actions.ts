@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth as triggerAuth, tasks } from "@trigger.dev/sdk";
 import type { helloWorldTask } from "@/trigger/example";
 import { createWorkflow, deleteWorkflow } from "@/features/workflows/data";
+import { liveblocks } from "@/lib/liveblocks";
 
 export async function createWorkflowAction(name: string) {
   const { orgId } = await clerkAuth();
@@ -28,6 +29,12 @@ export async function deleteWorkflowAction(id: string) {
   }
 
   await deleteWorkflow(orgId, id);
+
+  try {
+    await liveblocks.deleteRoom(id);
+  } catch (error) {
+    console.error("Failed to delete Liveblocks room:", error);
+  }
 
   revalidatePath("/", "layout");
   redirect("/");
