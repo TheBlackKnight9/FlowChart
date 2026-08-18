@@ -4,7 +4,7 @@ import { auth as clerkAuth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth as triggerAuth, tasks, runs } from "@trigger.dev/sdk";
-import type { helloWorldTask } from "@/trigger/example";
+import { runWorkflowTask} from "@/features/workflows/tasks/run-workflow";
 import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/workflows/data";
 import { liveblocks } from "@/lib/liveblocks";
 
@@ -56,9 +56,11 @@ export async function runWorkflowAction({
   }
   await saveWorkflowGraph({ orgId, id, graph})
 
-  const handle = await tasks.trigger<typeof helloWorldTask>("hello-world", {
-    message: "Workflow run initiated from right-sidebar",
-  });
+  const handle = await tasks.trigger<typeof runWorkflowTask>(
+    "run-workflow",
+    { workflowId: id, orgId },
+    { tags: [`workflow:${id}`]}
+  )
 
   const publicAccessToken = await triggerAuth.createPublicToken({
     scopes: {

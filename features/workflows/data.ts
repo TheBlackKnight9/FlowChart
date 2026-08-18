@@ -1,8 +1,7 @@
-import { and, desc, eq  } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { workflows, Workflow, WorkflowGraph} from "@/lib/db/schema";
-import { validateGraph } from "./lib/validate-graph";      
-import { StackId } from "recharts/types/util/ChartUtils";
+import { workflows, Workflow, WorkflowGraph } from "@/lib/db/schema";
+import { validateGraph } from "./lib/validate-graph";
 
 export async function saveWorkflowGraph({
     orgId,
@@ -12,9 +11,20 @@ export async function saveWorkflowGraph({
     orgId: string
     id: string
     graph: WorkflowGraph
-}) {
-    const problems = validateGraph(graph)
-    if (problems.length > 0) throw new Error(problems.join(" "))
+}): Promise<Workflow | undefined> {
+    const problems = validateGraph(graph);
+    if (problems.length > 0) throw new Error(problems.join(" "));
+
+    const [workflow] = await db
+        .update(workflows)
+        .set({
+            graph,
+            updatedAt: new Date(),
+        })
+        .where(and(eq(workflows.id, id), eq(workflows.orgId, orgId)))
+        .returning();
+
+    return workflow;
 }
  
 export async function listWorkflows(orgId: string): Promise<Workflow[]> {

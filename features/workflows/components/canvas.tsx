@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore } from "react"
+import { useState, useCallback, useMemo, useSyncExternalStore } from "react"
 import { useTheme } from "next-themes"
 import {
   Background,
@@ -9,7 +9,8 @@ import {
   ConnectionLineType,
   type ColorMode,
   type Edge,
-  NodeTypes,
+  type EdgeChange,
+  type NodeTypes,
   Panel,
 } from "@xyflow/react"
 import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
@@ -66,27 +67,92 @@ export function Canvas() {
     edges: { initial: initialEdges },
   })
 
+  // Liveblocks syncs edges from storage where local selection is not synced.
+  // We track selected edge IDs locally so React Flow knows which edge is selected when Backspace is pressed.
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<Set<string>>(() => new Set())
+
+  const edgesWithSelection = useMemo(() => {
+    return edges.map((edge) => ({
+      ...edge,
+      selected: selectedEdgeIds.has(edge.id),
+    }))
+  }, [edges, selectedEdgeIds])
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setSelectedEdgeIds((prev) => {
+        let next = prev
+        for (const change of changes) {
+          if (change.type === "select") {
+            if (next === prev) next = new Set(prev)
+            if (change.selected) {
+              next.add(change.id)
+            } else {
+              next.delete(change.id)
+            }
+          } else if (change.type === "remove") {
+            if (next === prev) next = new Set(prev)
+            next.delete(change.id)
+          }
+        }
+        return next
+      })
+
+      onEdgesChange(changes)
+
+      // When React Flow removes edges, ensure Liveblocks storage deletes them
+      const removed = changes.filter((c) => c.type === "remove")
+      if (removed.length > 0) {
+        onDelete({
+          nodes: [],
+          edges: removed.map((c) => ({ id: c.id } as Edge)),
+        })
+      }
+    },
+    [onEdgesChange, onDelete]
+  )
+
+  const handleDelete = useCallback(
+    (elements: { nodes: StepNodeType[]; edges: Edge[] }) => {
+      if (elements.edges.length > 0) {
+        setSelectedEdgeIds((prev) => {
+          const next = new Set(prev)
+          for (const edge of elements.edges) {
+            next.delete(edge.id)
+          }
+          return next
+        })
+      }
+      onDelete(elements)
+    },
+    [onDelete]
+  )
+
   return (
     <div className="size-full">
       <ReactFlow
         nodeTypes={nodeTypes}
         nodes={nodes}
-        edges={edges}
+        edges={edgesWithSelection}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
-        onDelete={onDelete}
+        onDelete={handleDelete}
         colorMode={colorMode}
         fitView
+        deleteKeyCode={["Backspace", "Delete"]}
+        elevateEdgesOnSelect={true}
         connectionLineType={ConnectionLineType.SmoothStep}
         connectionLineStyle={{ stroke: "var(--border)" }}
         defaultEdgeOptions={{
           type: "smoothstep",
-          style: { stroke: "var(--border)" },
+          interactionWidth: 20,
         }}
         style={
           {
             "--xy-background-color": "var(--background)",
+            "--xy-edge-stroke-default": "var(--border)",
+            "--xy-edge-stroke-selected": "var(--primary)",
             "--xy-edge-stroke-width": 2,
             "--xy-connectionline-stroke-width": 2,
           } as React.CSSProperties

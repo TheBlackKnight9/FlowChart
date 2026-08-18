@@ -11,7 +11,7 @@ export const workflows = pgTable("workflows", {
   id: uuid("id").defaultRandom().primaryKey(),
   orgId: text("org_id").notNull(),
   name: text("name").notNull(),
-  graph: json("graph"),
+  graph: json("graph").$type<WorkflowGraph>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 })
