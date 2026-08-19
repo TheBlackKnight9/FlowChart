@@ -4,7 +4,7 @@ import { auth as clerkAuth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth as triggerAuth, tasks, runs } from "@trigger.dev/sdk";
-import { runWorkflowTask} from "@/features/workflows/tasks/run-workflow";
+import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow";
 import { createWorkflow, deleteWorkflow, saveWorkflowGraph } from "@/features/workflows/data";
 import { liveblocks } from "@/lib/liveblocks";
 
