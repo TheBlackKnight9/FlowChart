@@ -2,6 +2,7 @@ import toposort from "toposort";
 import { logger, task } from "@trigger.dev/sdk";
 import { Stagehand } from "@browserbasehq/stagehand";
 import { nodeExecutors } from "../nodes/node-executors";
+import { interpolate } from "../lib/interpolate";
  
 import { getWorkflow }  from "@/features/workflows/data";
 
@@ -51,16 +52,31 @@ export const runWorkflowTask = task({
             return stagehand
         }
 
+        // Accumulate each node's output so downstream nodes can reference
+        // upstream results via {{ nodeId.path }} placeholders.
+        const outputs: Record<string, unknown> = {}
+
         for (const id of order){
             const node = byId.get(id)!
-            logger.log(`Running step: ${node.data.title}`)
+
+            // Interpolate placeholders in every field value before executing.
+            const resolvedValues: Record<string, string> = {}
+            for (const [key, raw] of Object.entries(node.data.values)) {
+                resolvedValues[key] = interpolate(raw, outputs)
+            }
+
+            logger.log(`Running step: ${node.data.title}`, { values: resolvedValues })
             
             const executor = nodeExecutors[node.data.type]
-            if (executor) await executor({values: node.data.values, getStagehand})
+            const result = executor
+                ? await executor({ values: resolvedValues, getStagehand })
+                : undefined
+
+            outputs[id] = result
         }
 
         await stagehand?.close()
 
         return { steps: order.length }
     },
-})
+})

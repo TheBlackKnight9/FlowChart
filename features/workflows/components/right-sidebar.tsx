@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useCallback, useRef, useState, useTransition } from "react"
 import { useReactFlow, useStore } from "@xyflow/react"
 import { MoreHorizontal, Play, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -35,6 +35,7 @@ import {
   type StepNodeKind,
   type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
+import { useUpstreamTokens } from "@/features/workflows/hooks/use-upstream-tokens"
 
 // This file builds up to the RightSidebar component exported at the bottom: a
 // header with workflow actions (delete, run), then two tabs — a Toolbar for
@@ -83,27 +84,30 @@ function Section({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Editor tab — edits the fields of the selected node.
-// ---------------------------------------------------------------------------
-
 // A single editor field for a node property. Renders a multi-line textarea when
 // the field opts in via `multiline`, otherwise a single-line input.
+// Reports focus so the Inspector knows which field to insert tokens into.
 function Field({
   field,
   value,
   onChange,
+  onFocus,
+  inputRef,
 }: {
   field: NodeField
   value: string
   onChange: (value: string) => void
+  onFocus: () => void
+  inputRef: (el: HTMLInputElement | HTMLTextAreaElement | null) => void
 }) {
   if (field.multiline) {
     return (
       <Textarea
+        ref={inputRef}
         id={field.key}
         value={value}
         placeholder={field.placeholder}
+        onFocus={onFocus}
         onChange={(e) => onChange(e.target.value)}
       />
     )
@@ -111,17 +115,71 @@ function Field({
 
   return (
     <Input
+      ref={inputRef}
       id={field.key}
       value={value}
       placeholder={field.placeholder}
+      onFocus={onFocus}
       onChange={(e) => onChange(e.target.value)}
     />
   )
 }
 
 // The Editor tab: one input per field on the selected node, or an empty state.
+// Shows a "Connections" section when upstream nodes expose outputs — clicking a
+// chip inserts its {{ token }} into the last-focused field (or the first field).
 function Inspector({ node }: { node: StepNodeType | undefined }) {
   const { updateNodeData } = useReactFlow<StepNodeType>()
+  const upstreamTokens = useUpstreamTokens(node?.id)
+
+  // Track which field the user last focused so token insertion goes there.
+  const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null)
+
+  // Keep a ref to each field's DOM element so we can insert at cursor position.
+  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({})
+
+  // Reset active field when the selected node changes.
+  const prevNodeId = useRef<string | undefined>(undefined)
+  if (node?.id !== prevNodeId.current) {
+    prevNodeId.current = node?.id
+    setActiveFieldKey(null)
+    fieldRefs.current = {}
+  }
+
+  const insertToken = useCallback(
+    (token: string) => {
+      if (!node) return
+
+      const { values } = node.data
+      const def = nodeRegistry[node.data.type]
+      // Use the active field, or fall back to the first field.
+      const key = activeFieldKey ?? def.fields[0]?.key
+      if (!key) return
+
+      const el = fieldRefs.current[key]
+      const current = values[key] ?? ""
+
+      // Insert at cursor position if the element is focused, otherwise append.
+      let next: string
+      if (el && document.activeElement === el) {
+        const start = el.selectionStart ?? current.length
+        const end = el.selectionEnd ?? start
+        next = current.slice(0, start) + token + current.slice(end)
+      } else {
+        next = current + token
+      }
+
+      updateNodeData(node.id, { values: { ...values, [key]: next } })
+
+      // Re-focus the field and place the cursor after the inserted token.
+      requestAnimationFrame(() => {
+        el?.focus()
+        const pos = (el && document.activeElement === el ? (el.selectionStart ?? 0) : 0) || next.length
+        el?.setSelectionRange(pos, pos)
+      })
+    },
+    [node, activeFieldKey, updateNodeData],
+  )
 
   if (!node) {
     return (
@@ -149,6 +207,10 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
               <Field
                 field={field}
                 value={values[field.key] ?? ""}
+                onFocus={() => setActiveFieldKey(field.key)}
+                inputRef={(el) => {
+                  fieldRefs.current[field.key] = el
+                }}
                 onChange={(value) => {
                   updateNodeData(node.id, {
                     values: { ...values, [field.key]: value },
@@ -159,6 +221,32 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
           ))
         )}
       </div>
+
+      {/* Connections — upstream outputs available for insertion */}
+      {upstreamTokens.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 border-y border-border bg-card px-3 py-1.5 text-sm font-semibold">
+            Connections
+          </div>
+          <div className="flex flex-wrap gap-1.5 p-3">
+            {upstreamTokens.map((ut) => (
+              <button
+                key={ut.token}
+                type="button"
+                onClick={() => insertToken(ut.token)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md border border-border",
+                  "px-2 py-1 text-xs text-muted-foreground transition-colors",
+                  "hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                <NodeIcon type={ut.sourceType} className="size-4 rounded" />
+                {ut.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </Section>
   )
 }

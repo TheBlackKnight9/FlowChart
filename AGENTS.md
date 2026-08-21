@@ -15,7 +15,7 @@ Do NOT rely on training data for React Flow APIs, components, hooks, types, or u
 <!-- TRIGGER.DEV SKILLS START -->
 ## Trigger.dev agent skills
 
-This project has Trigger.dev agent skills installed in `.agents/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-authoring-tasks`, `trigger-chat-agent-advanced`, `trigger-cost-savings`, `trigger-realtime-and-frontend`, `trigger-getting-started`.
+This project has Trigger.dev agent skills installed in `.agents/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-chat-agent-advanced`, `trigger-cost-savings`, `trigger-getting-started`, `trigger-realtime-and-frontend`, `trigger-authoring-tasks`.
 <!-- TRIGGER.DEV SKILLS END -->
 
 
